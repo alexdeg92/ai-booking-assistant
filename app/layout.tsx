@@ -26,7 +26,7 @@ export default function RootLayout({
           rel="stylesheet"
         />
       </head>
-      <body className="bg-slate-950 text-white">{children}</body>
+      <body className="bg-slate-950 text-white overflow-x-hidden">{children}</body>
     </html>
   );
 }

@@ -285,7 +285,7 @@ function BookingWidget() {
           {selectedDate && (
             <div className="animate-slide-down">
               <h4 className="font-bold mb-3">Heures disponibles — {selectedDate} février</h4>
-              <div className="grid grid-cols-4 sm:grid-cols-5 gap-2">
+              <div className="grid grid-cols-3 sm:grid-cols-5 gap-2">
                 {TIME_SLOTS.map((slot) => (
                   <button
                     key={slot.time}
@@ -464,21 +464,21 @@ export default function Home() {
               <span className="w-2 h-2 bg-violet-400 rounded-full animate-pulse" />
               Assistant de réservation intelligent
             </div>
-            <h1 className="text-5xl lg:text-7xl font-black leading-tight mb-6">
+            <h1 className="text-3xl sm:text-5xl lg:text-7xl font-black leading-tight mb-6">
               Zéro appel manqué,{" "}
               <span className="text-transparent bg-clip-text bg-gradient-to-r from-violet-400 to-cyan-300">
                 100% réservé
               </span>
             </h1>
-            <p className="text-xl text-slate-300 mb-8 leading-relaxed max-w-lg">
+            <p className="text-lg sm:text-xl text-slate-300 mb-8 leading-relaxed max-w-lg break-words">
               Un système de réservation IA qui gère vos rendez-vous, envoie des rappels
               et remplit votre agenda — 24/7, sans intervention humaine.
             </p>
             <div className="flex flex-wrap gap-4">
-              <a href="#demo" className="gradient-purple px-8 py-4 rounded-xl text-lg font-bold hover:opacity-90 transition pulse-glow-purple">
+              <a href="#demo" className="w-full sm:w-auto text-center gradient-purple px-8 py-4 rounded-xl text-lg font-bold hover:opacity-90 transition pulse-glow-purple">
                 Voir la démo en direct →
               </a>
-              <a href="#tarifs" className="border border-slate-600 px-8 py-4 rounded-xl text-lg font-semibold hover:bg-slate-800 transition">
+              <a href="#tarifs" className="w-full sm:w-auto text-center border border-slate-600 px-8 py-4 rounded-xl text-lg font-semibold hover:bg-slate-800 transition">
                 Voir les tarifs
               </a>
             </div>
@@ -536,14 +536,14 @@ export default function Home() {
       <section id="fonctionnalites" className="py-24">
         <div className="max-w-7xl mx-auto px-6">
           <div className="text-center mb-16">
-            <h2 className="text-4xl md:text-5xl font-black mb-4">
+            <h2 className="text-3xl sm:text-4xl md:text-5xl font-black mb-4">
               Votre agenda, <span className="text-violet-400">automatisé</span>
             </h2>
             <p className="text-lg text-slate-400 max-w-2xl mx-auto">
               Fini les appels manqués et les doubles réservations. BookIA gère tout pour vous.
             </p>
           </div>
-          <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-8">
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-8">
             {[
               {
                 icon: <IconCalendar />,
@@ -592,7 +592,7 @@ export default function Home() {
       <section id="demo" className="py-24 bg-slate-900/30">
         <div className="max-w-7xl mx-auto px-6">
           <div className="text-center mb-12">
-            <h2 className="text-4xl md:text-5xl font-black mb-4">
+            <h2 className="text-3xl sm:text-4xl md:text-5xl font-black mb-4">
               Essayez-le <span className="text-violet-400">maintenant</span>
             </h2>
             <p className="text-lg text-slate-400 max-w-2xl mx-auto">
@@ -609,11 +609,11 @@ export default function Home() {
       <section className="py-24">
         <div className="max-w-7xl mx-auto px-6">
           <div className="text-center mb-16">
-            <h2 className="text-4xl md:text-5xl font-black mb-4">
+            <h2 className="text-3xl sm:text-4xl md:text-5xl font-black mb-4">
               En ligne en <span className="text-violet-400">48 heures</span>
             </h2>
           </div>
-          <div className="grid md:grid-cols-3 gap-8">
+          <div className="grid grid-cols-1 sm:grid-cols-3 gap-8">
             {[
               {
                 step: "01",
@@ -645,11 +645,11 @@ export default function Home() {
       <section className="py-24 bg-slate-900/30">
         <div className="max-w-7xl mx-auto px-6">
           <div className="text-center mb-16">
-            <h2 className="text-4xl md:text-5xl font-black mb-4">
+            <h2 className="text-3xl sm:text-4xl md:text-5xl font-black mb-4">
               Parfait pour <span className="text-violet-400">votre industrie</span>
             </h2>
           </div>
-          <div className="grid sm:grid-cols-2 lg:grid-cols-4 gap-6">
+          <div className="grid grid-cols-2 sm:grid-cols-2 lg:grid-cols-4 gap-4 sm:gap-6">
             {[
               { icon: "✂️", name: "Salons de coiffure", desc: "Coupes, colorations, coiffures" },
               { icon: "💆", name: "Spas & Massages", desc: "Soins, massages, détente" },
@@ -674,11 +674,11 @@ export default function Home() {
       <section className="py-24">
         <div className="max-w-7xl mx-auto px-6">
           <div className="text-center mb-16">
-            <h2 className="text-4xl md:text-5xl font-black mb-4">
+            <h2 className="text-3xl sm:text-4xl md:text-5xl font-black mb-4">
               Ils nous font <span className="text-violet-400">confiance</span>
             </h2>
           </div>
-          <div className="grid md:grid-cols-3 gap-8">
+          <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-8">
             {[
               {
                 name: "Isabelle Côté",
@@ -722,12 +722,12 @@ export default function Home() {
       <section id="tarifs" className="py-24 bg-slate-900/30">
         <div className="max-w-7xl mx-auto px-6">
           <div className="text-center mb-16">
-            <h2 className="text-4xl md:text-5xl font-black mb-4">
+            <h2 className="text-3xl sm:text-4xl md:text-5xl font-black mb-4">
               Tarifs <span className="text-violet-400">simples</span>
             </h2>
             <p className="text-lg text-slate-400">Investissez dans votre croissance. ROI garanti dès le premier mois.</p>
           </div>
-          <div className="grid md:grid-cols-3 gap-8 max-w-5xl mx-auto">
+          <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-8 max-w-5xl mx-auto">
             {[
               {
                 name: "Solo",
@@ -816,7 +816,7 @@ export default function Home() {
         <div className="max-w-7xl mx-auto px-6">
           <div className="grid lg:grid-cols-2 gap-16 items-center">
             <div>
-              <h2 className="text-4xl md:text-5xl font-black mb-6">
+              <h2 className="text-3xl sm:text-4xl md:text-5xl font-black mb-6">
                 Prêt à remplir votre{" "}
                 <span className="text-violet-400">agenda</span>?
               </h2>
@@ -863,7 +863,7 @@ export default function Home() {
                     required
                     className="w-full bg-slate-800 border border-slate-700 rounded-xl px-4 py-3 text-sm text-white placeholder-slate-400 focus:outline-none focus:border-violet-500 transition"
                   />
-                  <div className="grid grid-cols-2 gap-3">
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                     <input
                       type="email"
                       placeholder="Votre courriel"
