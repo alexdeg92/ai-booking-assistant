@@ -1,10 +1,8 @@
 "use client";
 
-import { useState, useEffect } from "react";
-import { fetchServices, fetchStaff, fetchAvailability, createBooking, sendConfirmationEmail } from '@/lib/api';
-import type { ApiService, ApiStaff, ApiTimeSlot, ApiBookingRequest } from '@/lib/api';
+import { useState } from "react";
 
-/* ───────────────── ICONS (unchanged) ───────────────── */
+/* ───────────────── ICONS ───────────────── */
 const IconCheck = () => (
   <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2.5} className="w-5 h-5 text-emerald-400">
     <path d="M5 13l4 4L19 7" />
@@ -69,196 +67,62 @@ const IconChevronRight = () => (
   </svg>
 );
 
-/* ───────────────── BOOKING WIDGET WITH REAL API ───────────────── */
+/* ───────────────── BOOKING DEMO DATA ───────────────── */
+const SERVICES = [
+  { id: "coupe", name: "Coupe femme", duration: "45 min", price: "55$", icon: "✂️" },
+  { id: "coloration", name: "Coloration complète", duration: "90 min", price: "120$", icon: "🎨" },
+  { id: "meches", name: "Mèches / Balayage", duration: "120 min", price: "150$", icon: "✨" },
+  { id: "brushing", name: "Brushing", duration: "30 min", price: "35$", icon: "💇" },
+  { id: "soin", name: "Soin capillaire", duration: "60 min", price: "80$", icon: "💆" },
+  { id: "barbe", name: "Taille de barbe", duration: "20 min", price: "25$", icon: "🧔" },
+];
+
+const STYLISTS = [
+  { id: "marie", name: "Marie L.", specialty: "Coloriste", avatar: "👩‍🎨" },
+  { id: "julien", name: "Julien D.", specialty: "Coiffeur senior", avatar: "💇‍♂️" },
+  { id: "sophie", name: "Sophie R.", specialty: "Spécialiste soins", avatar: "💆‍♀️" },
+];
+
+const TIME_SLOTS = [
+  { time: "09:00", available: true },
+  { time: "09:30", available: false },
+  { time: "10:00", available: true },
+  { time: "10:30", available: true },
+  { time: "11:00", available: false },
+  { time: "11:30", available: true },
+  { time: "13:00", available: true },
+  { time: "13:30", available: false },
+  { time: "14:00", available: true },
+  { time: "14:30", available: true },
+  { time: "15:00", available: true },
+  { time: "15:30", available: false },
+  { time: "16:00", available: true },
+  { time: "16:30", available: true },
+];
+
+/* ───────────────── BOOKING WIDGET ───────────────── */
 function BookingWidget() {
   const [step, setStep] = useState(1);
-  const [loading, setLoading] = useState(false);
-  const [error, setError] = useState<string | null>(null);
-  
-  // Form data
   const [selectedService, setSelectedService] = useState<string | null>(null);
   const [selectedStylist, setSelectedStylist] = useState<string | null>(null);
   const [selectedDate, setSelectedDate] = useState<number | null>(null);
   const [selectedTime, setSelectedTime] = useState<string | null>(null);
-  const [customerName, setCustomerName] = useState("");
-  const [customerEmail, setCustomerEmail] = useState("");
-  const [customerPhone, setCustomerPhone] = useState("");
-  
-  // API data
-  const [services, setServices] = useState<ApiService[]>([]);
-  const [staff, setStaff] = useState<ApiStaff[]>([]);
-  const [timeSlots, setTimeSlots] = useState<ApiTimeSlot[]>([]);
-  const [createdBooking, setCreatedBooking] = useState<any>(null);
-
-  // Calendar state
   const [calendarMonth] = useState(1); // February (0-indexed)
-  const today = 14; // Current day (February 14, 2026)
+
+  const today = 7; // Simulated "today"
   const daysInMonth = 28;
   const monthName = "Février 2026";
   const dayNames = ["Lun", "Mar", "Mer", "Jeu", "Ven", "Sam", "Dim"];
-  const startOffset = 6; // Feb 2026 starts on Sunday
+  // Feb 2026 starts on Sunday → offset = 6
+  const startOffset = 6;
 
-  // Load services on component mount
-  useEffect(() => {
-    loadServices();
-  }, []);
+  const service = SERVICES.find((s) => s.id === selectedService);
+  const stylist = STYLISTS.find((s) => s.id === selectedStylist);
 
-  // Load staff when step 2 is reached
-  useEffect(() => {
-    if (step === 2 && staff.length === 0) {
-      loadStaff();
-    }
-  }, [step, staff.length]);
-
-  // Load availability when date is selected
-  useEffect(() => {
-    if (selectedDate && selectedService && step === 3) {
-      loadAvailability();
-    }
-  }, [selectedDate, selectedService, selectedStylist, step]);
-
-  const loadServices = async () => {
-    try {
-      setLoading(true);
-      setError(null);
-      const servicesData = await fetchServices();
-      setServices(servicesData);
-    } catch (err) {
-      setError('Erreur lors du chargement des services. Veuillez réessayer.');
-      console.error('Error loading services:', err);
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  const loadStaff = async () => {
-    try {
-      setLoading(true);
-      setError(null);
-      const staffData = await fetchStaff();
-      setStaff(staffData);
-    } catch (err) {
-      setError('Erreur lors du chargement de l\'équipe. Veuillez réessayer.');
-      console.error('Error loading staff:', err);
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  const loadAvailability = async () => {
-    if (!selectedService || !selectedDate) return;
-
-    try {
-      setLoading(true);
-      setError(null);
-      setTimeSlots([]);
-
-      // Format date as YYYY-MM-DD
-      const year = 2026;
-      const month = 2; // February
-      const dateStr = `${year}-${month.toString().padStart(2, '0')}-${selectedDate.toString().padStart(2, '0')}`;
-
-      const availability = await fetchAvailability(
-        selectedService,
-        selectedStylist,
-        dateStr
-      );
-      setTimeSlots(availability);
-    } catch (err) {
-      setError('Erreur lors du chargement des disponibilités. Veuillez réessayer.');
-      console.error('Error loading availability:', err);
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  const handleConfirm = async () => {
-    if (!selectedService || !selectedDate || !selectedTime || !customerName.trim()) {
-      setError('Veuillez remplir tous les champs obligatoires.');
-      return;
-    }
-
-    try {
-      setLoading(true);
-      setError(null);
-
-      // Format date
-      const year = 2026;
-      const month = 2; // February  
-      const dateStr = `${year}-${month.toString().padStart(2, '0')}-${selectedDate.toString().padStart(2, '0')}`;
-
-      const bookingData: ApiBookingRequest = {
-        serviceCode: selectedService,
-        staffCode: selectedStylist === 'any' ? null : selectedStylist,
-        date: dateStr,
-        time: selectedTime,
-        customerName: customerName.trim(),
-        customerEmail: customerEmail.trim() || undefined,
-        customerPhone: customerPhone.trim() || undefined
-      };
-
-      const result = await createBooking(bookingData);
-      setCreatedBooking(result.booking);
-
-      // Send confirmation email if email provided
-      if (customerEmail.trim() && result.booking?.id) {
-        try {
-          await sendConfirmationEmail(result.booking.id, 'confirmation');
-        } catch (emailError) {
-          console.error('Failed to send confirmation email:', emailError);
-          // Don't fail the booking if email fails
-        }
-      }
-
-      setStep(5);
-    } catch (err: any) {
-      setError(err.message || 'Erreur lors de la création du rendez-vous. Veuillez réessayer.');
-      console.error('Error creating booking:', err);
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  const resetBooking = () => {
-    setStep(1);
-    setSelectedService(null);
-    setSelectedStylist(null);
-    setSelectedDate(null);
-    setSelectedTime(null);
-    setCustomerName("");
-    setCustomerEmail("");
-    setCustomerPhone("");
-    setTimeSlots([]);
-    setCreatedBooking(null);
-    setError(null);
-  };
-
-  const service = services.find((s) => s.code === selectedService);
-  const stylist = staff.find((s) => s.code === selectedStylist);
+  const handleConfirm = () => setStep(5);
 
   return (
     <div className="w-full max-w-2xl mx-auto">
-      {/* Error message */}
-      {error && (
-        <div className="bg-red-500/10 border border-red-500/30 rounded-xl p-4 mb-6">
-          <p className="text-red-400 text-sm">{error}</p>
-          <button 
-            onClick={() => setError(null)}
-            className="text-red-300 text-xs hover:text-red-200 mt-2"
-          >
-            Fermer
-          </button>
-        </div>
-      )}
-
-      {/* Loading indicator */}
-      {loading && (
-        <div className="text-center py-8">
-          <div className="inline-block w-8 h-8 border-4 border-violet-400 border-t-transparent rounded-full animate-spin"></div>
-          <p className="text-slate-400 mt-2">Chargement...</p>
-        </div>
-      )}
-
       {/* Progress bar */}
       <div className="flex items-center justify-between mb-8">
         {["Service", "Styliste", "Date", "Confirmer"].map((label, i) => (
@@ -286,39 +150,29 @@ function BookingWidget() {
       {step === 1 && (
         <div className="animate-fade-in-up">
           <h3 className="text-2xl font-bold mb-6">Choisissez un service</h3>
-          {services.length === 0 && !loading ? (
-            <div className="text-center py-8">
-              <p className="text-slate-400 mb-4">Aucun service disponible pour le moment.</p>
-              <button onClick={loadServices} className="text-violet-400 hover:text-violet-300">
-                Réessayer
+          <div className="grid gap-3">
+            {SERVICES.map((s) => (
+              <button
+                key={s.id}
+                onClick={() => {
+                  setSelectedService(s.id);
+                  setStep(2);
+                }}
+                className={`flex items-center gap-4 p-4 rounded-xl border transition text-left ${
+                  selectedService === s.id
+                    ? "border-violet-500 bg-violet-500/10"
+                    : "border-slate-700/50 glass-card hover:border-violet-500/30"
+                }`}
+              >
+                <span className="text-3xl">{s.icon}</span>
+                <div className="flex-1">
+                  <p className="font-semibold">{s.name}</p>
+                  <p className="text-sm text-slate-400">{s.duration}</p>
+                </div>
+                <span className="text-lg font-bold text-violet-400">{s.price}</span>
               </button>
-            </div>
-          ) : (
-            <div className="grid gap-3">
-              {services.map((s) => (
-                <button
-                  key={s.code}
-                  onClick={() => {
-                    setSelectedService(s.code);
-                    setStep(2);
-                  }}
-                  disabled={loading}
-                  className={`flex items-center gap-4 p-4 rounded-xl border transition text-left disabled:opacity-50 ${
-                    selectedService === s.code
-                      ? "border-violet-500 bg-violet-500/10"
-                      : "border-slate-700/50 glass-card hover:border-violet-500/30"
-                  }`}
-                >
-                  <span className="text-3xl">{s.icon}</span>
-                  <div className="flex-1">
-                    <p className="font-semibold">{s.name}</p>
-                    <p className="text-sm text-slate-400">{s.duration}</p>
-                  </div>
-                  <span className="text-lg font-bold text-violet-400">{s.price}</span>
-                </button>
-              ))}
-            </div>
-          )}
+            ))}
+          </div>
         </div>
       )}
 
@@ -327,56 +181,43 @@ function BookingWidget() {
         <div className="animate-fade-in-up">
           <h3 className="text-2xl font-bold mb-2">Choisissez votre styliste</h3>
           <p className="text-slate-400 mb-6">Pour: <span className="text-violet-400 font-semibold">{service?.name}</span></p>
-          
-          {staff.length === 0 && !loading ? (
-            <div className="text-center py-8">
-              <p className="text-slate-400 mb-4">Aucun styliste disponible pour le moment.</p>
-              <button onClick={loadStaff} className="text-violet-400 hover:text-violet-300">
-                Réessayer
-              </button>
-            </div>
-          ) : (
-            <div className="grid gap-3">
-              {staff.map((s) => (
-                <button
-                  key={s.code}
-                  onClick={() => {
-                    setSelectedStylist(s.code);
-                    setStep(3);
-                  }}
-                  disabled={loading}
-                  className={`flex items-center gap-4 p-5 rounded-xl border transition text-left disabled:opacity-50 ${
-                    selectedStylist === s.code
-                      ? "border-violet-500 bg-violet-500/10"
-                      : "border-slate-700/50 glass-card hover:border-violet-500/30"
-                  }`}
-                >
-                  <div className="w-14 h-14 rounded-full bg-slate-800 flex items-center justify-center text-2xl">
-                    {s.avatar_emoji}
-                  </div>
-                  <div>
-                    <p className="font-semibold text-lg">{s.name}</p>
-                    <p className="text-sm text-slate-400">{s.specialty}</p>
-                  </div>
-                </button>
-              ))}
+          <div className="grid gap-3">
+            {STYLISTS.map((s) => (
               <button
+                key={s.id}
                 onClick={() => {
-                  setSelectedStylist("any");
+                  setSelectedStylist(s.id);
                   setStep(3);
                 }}
-                disabled={loading}
-                className="flex items-center gap-4 p-5 rounded-xl border border-slate-700/50 glass-card hover:border-violet-500/30 transition text-left disabled:opacity-50"
+                className={`flex items-center gap-4 p-5 rounded-xl border transition text-left ${
+                  selectedStylist === s.id
+                    ? "border-violet-500 bg-violet-500/10"
+                    : "border-slate-700/50 glass-card hover:border-violet-500/30"
+                }`}
               >
-                <div className="w-14 h-14 rounded-full bg-slate-800 flex items-center justify-center text-2xl">🎲</div>
+                <div className="w-14 h-14 rounded-full bg-slate-800 flex items-center justify-center text-2xl">
+                  {s.avatar}
+                </div>
                 <div>
-                  <p className="font-semibold text-lg">Pas de préférence</p>
-                  <p className="text-sm text-slate-400">Premier(ère) disponible</p>
+                  <p className="font-semibold text-lg">{s.name}</p>
+                  <p className="text-sm text-slate-400">{s.specialty}</p>
                 </div>
               </button>
-            </div>
-          )}
-          
+            ))}
+            <button
+              onClick={() => {
+                setSelectedStylist("any");
+                setStep(3);
+              }}
+              className="flex items-center gap-4 p-5 rounded-xl border border-slate-700/50 glass-card hover:border-violet-500/30 transition text-left"
+            >
+              <div className="w-14 h-14 rounded-full bg-slate-800 flex items-center justify-center text-2xl">🎲</div>
+              <div>
+                <p className="font-semibold text-lg">Pas de préférence</p>
+                <p className="text-sm text-slate-400">Premier(ère) disponible</p>
+              </div>
+            </button>
+          </div>
           <button onClick={() => setStep(1)} className="mt-4 text-sm text-slate-400 hover:text-white flex items-center gap-1">
             <IconChevronLeft /> Retour
           </button>
@@ -418,12 +259,12 @@ function BookingWidget() {
                 return (
                   <button
                     key={day}
-                    disabled={isPast || isWeekend || loading}
+                    disabled={isPast || isWeekend}
                     onClick={() => {
                       setSelectedDate(day);
                       setSelectedTime(null);
                     }}
-                    className={`py-2 rounded-lg text-sm transition disabled:cursor-not-allowed ${
+                    className={`py-2 rounded-lg text-sm transition ${
                       isPast || isWeekend
                         ? "text-slate-700 cursor-not-allowed"
                         : isSelected
@@ -431,7 +272,7 @@ function BookingWidget() {
                         : isToday
                         ? "border border-violet-500 text-violet-400"
                         : "hover:bg-slate-800 text-slate-300"
-                    } ${loading ? "opacity-50" : ""}`}
+                    }`}
                   >
                     {day}
                   </button>
@@ -444,33 +285,27 @@ function BookingWidget() {
           {selectedDate && (
             <div className="animate-slide-down">
               <h4 className="font-bold mb-3">Heures disponibles — {selectedDate} février</h4>
-              {timeSlots.length === 0 && !loading ? (
-                <div className="text-center py-8">
-                  <p className="text-slate-400">Aucun créneau disponible pour cette date.</p>
-                </div>
-              ) : (
-                <div className="grid grid-cols-3 sm:grid-cols-5 gap-2">
-                  {timeSlots.map((slot) => (
-                    <button
-                      key={slot.time}
-                      disabled={!slot.available || loading}
-                      onClick={() => {
-                        setSelectedTime(slot.time);
-                        setStep(4);
-                      }}
-                      className={`py-2.5 rounded-lg text-sm font-medium transition disabled:cursor-not-allowed ${
-                        !slot.available
-                          ? "bg-slate-800/50 text-slate-600 cursor-not-allowed line-through"
-                          : selectedTime === slot.time
-                          ? "gradient-purple text-white"
-                          : "border border-slate-700 hover:border-violet-500 text-slate-300"
-                      } ${loading ? "opacity-50" : ""}`}
-                    >
-                      {slot.time}
-                    </button>
-                  ))}
-                </div>
-              )}
+              <div className="grid grid-cols-3 sm:grid-cols-5 gap-2">
+                {TIME_SLOTS.map((slot) => (
+                  <button
+                    key={slot.time}
+                    disabled={!slot.available}
+                    onClick={() => {
+                      setSelectedTime(slot.time);
+                      setStep(4);
+                    }}
+                    className={`py-2.5 rounded-lg text-sm font-medium transition ${
+                      !slot.available
+                        ? "bg-slate-800/50 text-slate-600 cursor-not-allowed line-through"
+                        : selectedTime === slot.time
+                        ? "gradient-purple text-white"
+                        : "border border-slate-700 hover:border-violet-500 text-slate-300"
+                    }`}
+                  >
+                    {slot.time}
+                  </button>
+                ))}
+              </div>
             </div>
           )}
 
@@ -493,7 +328,7 @@ function BookingWidget() {
             <div className="flex justify-between items-center">
               <span className="text-slate-400">Styliste</span>
               <span className="font-semibold">
-                {selectedStylist === "any" ? "🎲 Premier(ère) disponible" : `${stylist?.avatar_emoji} ${stylist?.name}`}
+                {selectedStylist === "any" ? "🎲 Premier(ère) disponible" : `${stylist?.avatar} ${stylist?.name}`}
               </span>
             </div>
             <div className="border-t border-slate-700/50" />
@@ -523,42 +358,27 @@ function BookingWidget() {
             <h4 className="font-bold">Vos coordonnées</h4>
             <input
               type="text"
-              placeholder="Votre nom complet *"
-              value={customerName}
-              onChange={(e) => setCustomerName(e.target.value)}
-              required
+              placeholder="Votre nom complet"
               className="w-full bg-slate-800 border border-slate-700 rounded-xl px-4 py-3 text-sm text-white placeholder-slate-400 focus:outline-none focus:border-violet-500 transition"
             />
             <input
               type="tel"
               placeholder="Numéro de téléphone"
-              value={customerPhone}
-              onChange={(e) => setCustomerPhone(e.target.value)}
               className="w-full bg-slate-800 border border-slate-700 rounded-xl px-4 py-3 text-sm text-white placeholder-slate-400 focus:outline-none focus:border-violet-500 transition"
             />
             <input
               type="email"
               placeholder="Courriel (pour la confirmation)"
-              value={customerEmail}
-              onChange={(e) => setCustomerEmail(e.target.value)}
               className="w-full bg-slate-800 border border-slate-700 rounded-xl px-4 py-3 text-sm text-white placeholder-slate-400 focus:outline-none focus:border-violet-500 transition"
             />
           </div>
 
           <div className="flex gap-3">
-            <button 
-              onClick={() => setStep(3)} 
-              disabled={loading}
-              className="flex-1 border border-slate-600 py-3 rounded-xl font-semibold hover:bg-slate-800 transition disabled:opacity-50"
-            >
+            <button onClick={() => setStep(3)} className="flex-1 border border-slate-600 py-3 rounded-xl font-semibold hover:bg-slate-800 transition">
               ← Retour
             </button>
-            <button 
-              onClick={handleConfirm}
-              disabled={loading || !customerName.trim()}
-              className="flex-1 gradient-purple py-3 rounded-xl font-bold hover:opacity-90 transition disabled:opacity-50 disabled:cursor-not-allowed"
-            >
-              {loading ? "Confirmation..." : "Confirmer le rendez-vous ✓"}
+            <button onClick={handleConfirm} className="flex-1 gradient-purple py-3 rounded-xl font-bold hover:opacity-90 transition">
+              Confirmer le rendez-vous ✓
             </button>
           </div>
         </div>
@@ -573,31 +393,23 @@ function BookingWidget() {
             </svg>
           </div>
           <h3 className="text-3xl font-black mb-3">Rendez-vous confirmé! 🎉</h3>
-          {createdBooking && (
-            <div className="mb-4">
-              <p className="text-slate-300 text-lg mb-2">
-                Référence: <span className="font-bold text-violet-400">{createdBooking.booking_reference}</span>
-              </p>
-              <p className="text-slate-300 text-lg mb-2">
-                {service?.name} — {selectedDate} février à {selectedTime}
-              </p>
-              {createdBooking.assigned_staff && (
-                <p className="text-slate-400 mb-2">
-                  Avec {createdBooking.assigned_staff.avatar_emoji} {createdBooking.assigned_staff.name}
-                </p>
-              )}
-            </div>
-          )}
-          <p className="text-slate-400 mb-8">
-            {customerEmail ? "Un courriel de confirmation a été envoyé." : "Votre rendez-vous a été enregistré."}
+          <p className="text-slate-300 text-lg mb-2">
+            {service?.name} — {selectedDate} février à {selectedTime}
           </p>
+          <p className="text-slate-400 mb-8">Un SMS et courriel de confirmation ont été envoyés.</p>
           <div className="glass-card rounded-xl p-6 max-w-sm mx-auto text-left space-y-3 mb-8">
-            <p className="text-sm text-slate-400">📱 Rappel SMS disponible</p>
-            <p className="text-sm text-slate-400">📧 {customerEmail ? "Courriel envoyé" : "Courriel optionnel"}</p>
-            <p className="text-sm text-slate-400">🔄 Modification possible</p>
+            <p className="text-sm text-slate-400">📱 Rappel SMS envoyé 24h avant</p>
+            <p className="text-sm text-slate-400">📧 Courriel de confirmation envoyé</p>
+            <p className="text-sm text-slate-400">🔄 Modification/annulation en 1 clic</p>
           </div>
           <button
-            onClick={resetBooking}
+            onClick={() => {
+              setStep(1);
+              setSelectedService(null);
+              setSelectedStylist(null);
+              setSelectedDate(null);
+              setSelectedTime(null);
+            }}
             className="gradient-purple px-8 py-3 rounded-xl font-bold hover:opacity-90 transition"
           >
             Réserver un autre rendez-vous
@@ -608,7 +420,7 @@ function BookingWidget() {
   );
 }
 
-/* ───────────────── MAIN PAGE (rest unchanged except BookingWidget) ───────────────── */
+/* ───────────────── MAIN PAGE ───────────────── */
 export default function Home() {
   const [formStatus, setFormStatus] = useState<"idle" | "sent">("idle");
 
@@ -785,8 +597,6 @@ export default function Home() {
             </h2>
             <p className="text-lg text-slate-400 max-w-2xl mx-auto">
               Testez le parcours de réservation complet. C&apos;est exactement ce que vos clients verront.
-              <br />
-              <span className="text-violet-400 text-sm">🚀 Maintenant avec une vraie base de données!</span>
             </p>
           </div>
           <div className="glass-card rounded-2xl p-6 md:p-10">
@@ -795,9 +605,6 @@ export default function Home() {
         </div>
       </section>
 
-      {/* All the other sections remain exactly the same... */}
-      {/* I'll skip copying them all here since they're unchanged */}
-      
       {/* ───── HOW IT WORKS ───── */}
       <section className="py-24">
         <div className="max-w-7xl mx-auto px-6">
@@ -828,6 +635,83 @@ export default function Home() {
                 <div className="text-6xl font-black text-violet-500/20 mb-4">{s.step}</div>
                 <h3 className="text-xl font-bold mb-3">{s.title}</h3>
                 <p className="text-slate-400">{s.desc}</p>
+              </div>
+            ))}
+          </div>
+        </div>
+      </section>
+
+      {/* ───── INDUSTRIES ───── */}
+      <section className="py-24 bg-slate-900/30">
+        <div className="max-w-7xl mx-auto px-6">
+          <div className="text-center mb-16">
+            <h2 className="text-3xl sm:text-4xl md:text-5xl font-black mb-4">
+              Parfait pour <span className="text-violet-400">votre industrie</span>
+            </h2>
+          </div>
+          <div className="grid grid-cols-2 sm:grid-cols-2 lg:grid-cols-4 gap-4 sm:gap-6">
+            {[
+              { icon: "✂️", name: "Salons de coiffure", desc: "Coupes, colorations, coiffures" },
+              { icon: "💆", name: "Spas & Massages", desc: "Soins, massages, détente" },
+              { icon: "🏥", name: "Cliniques", desc: "Dentaires, esthétiques, médicales" },
+              { icon: "💅", name: "Esthétique", desc: "Manucure, pédicure, soins" },
+              { icon: "🏋️", name: "Studios fitness", desc: "Cours, entraînements, coaching" },
+              { icon: "📸", name: "Photographes", desc: "Séances, événements, portraits" },
+              { icon: "🐾", name: "Toilettage", desc: "Soins pour animaux" },
+              { icon: "🎓", name: "Tuteurs", desc: "Cours privés, formations" },
+            ].map((ind) => (
+              <div key={ind.name} className="glass-card rounded-xl p-6 text-center hover:border-violet-500/30 transition">
+                <span className="text-4xl mb-3 block">{ind.icon}</span>
+                <h3 className="font-bold mb-1">{ind.name}</h3>
+                <p className="text-sm text-slate-400">{ind.desc}</p>
+              </div>
+            ))}
+          </div>
+        </div>
+      </section>
+
+      {/* ───── TESTIMONIALS ───── */}
+      <section className="py-24">
+        <div className="max-w-7xl mx-auto px-6">
+          <div className="text-center mb-16">
+            <h2 className="text-3xl sm:text-4xl md:text-5xl font-black mb-4">
+              Ils nous font <span className="text-violet-400">confiance</span>
+            </h2>
+          </div>
+          <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-8">
+            {[
+              {
+                name: "Isabelle Côté",
+                role: "Propriétaire, Salon Beauté Pure",
+                text: "Mes no-shows sont passés de 15% à presque zéro. Les rappels SMS font toute la différence. En plus, je reçois des réservations même à 23h!",
+              },
+              {
+                name: "Marc-André Simard",
+                role: "Directeur, Spa Zenitude",
+                text: "L'installation a pris 20 minutes. Nos clients adorent la simplicité du système. On a augmenté notre taux de remplissage de 35%.",
+              },
+              {
+                name: "Catherine Roy",
+                role: "Dentiste, Clinique Roy",
+                text: "Fini les heures au téléphone à gérer les rendez-vous. BookIA nous a littéralement libéré une employée à temps plein.",
+              },
+            ].map((t) => (
+              <div key={t.name} className="glass-card rounded-2xl p-8">
+                <div className="flex gap-1 mb-4">
+                  {[1, 2, 3, 4, 5].map((s) => (
+                    <IconStar key={s} />
+                  ))}
+                </div>
+                <p className="text-slate-300 mb-6 leading-relaxed">&ldquo;{t.text}&rdquo;</p>
+                <div className="flex items-center gap-3">
+                  <div className="w-10 h-10 gradient-purple rounded-full flex items-center justify-center font-bold text-sm">
+                    {t.name[0]}
+                  </div>
+                  <div>
+                    <p className="font-semibold text-sm">{t.name}</p>
+                    <p className="text-xs text-slate-400">{t.role}</p>
+                  </div>
+                </div>
               </div>
             ))}
           </div>
