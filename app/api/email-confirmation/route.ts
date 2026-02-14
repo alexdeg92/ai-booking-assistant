@@ -1,10 +1,10 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { supabase } from '@/lib/supabase'
-import nodemailer from 'nodemailer'
 
 // Configure your email transporter (example with Gmail)
-const createEmailTransporter = () => {
-  return nodemailer.createTransporter({
+const createEmailTransporter = async () => {
+  const nodemailer = await import('nodemailer')
+  return nodemailer.default.createTransport({
     service: 'gmail',
     auth: {
       user: process.env.EMAIL_USER,
@@ -76,7 +76,7 @@ export async function POST(request: NextRequest) {
     // Send email (if transporter is configured)
     if (process.env.EMAIL_USER && process.env.EMAIL_PASSWORD) {
       try {
-        const transporter = createEmailTransporter()
+        const transporter = await createEmailTransporter()
         
         await transporter.sendMail({
           from: process.env.EMAIL_USER,
